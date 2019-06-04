@@ -2,6 +2,12 @@
 
 <img src="./assets/flash.png" width="1000">
 
+- [中文版](./README.zh-CN.md)
+- [Русский](./README.ru-RU.md)
+- [Português](./README.pt-BR.md)
+- [Español](./README.es-ES.md)
+- [日本語](./README.ja-JP.md)
+
 ## Introduction
 
 This document contains a list of practices which will help us boost the performance of our Angular applications. "Angular Performance Checklist" covers different topics - from server-side pre-rendering and bundling of our applications, to runtime performance and optimization of the change detection performed by the framework.
@@ -27,6 +33,7 @@ Note that most practices are valid for both HTTP/1.1 and HTTP/2. Practices which
     - [Minification and Dead code elimination](#minification-and-dead-code-elimination)
     - [Remove template whitespace](#remove-template-whitespace)
     - [Tree-shaking](#tree-shaking)
+    - [Tree-shakeable providers](#tree-shakeable-providers)
     - [Ahead-of-Time (AoT) Compilation](#ahead-of-time-aot-compilation)
     - [Compression](#compression)
     - [Pre-fetching Resources](#pre-fetching-resources)
@@ -45,7 +52,9 @@ Note that most practices are valid for both HTTP/1.1 and HTTP/2. Practices which
       - [Detaching the Change Detector](#detaching-the-change-detector)
       - [Run outside Angular](#run-outside-angular)
     - [Use pure pipes](#use-pure-pipes)
-    - [Use `trackBy` option for `*ngFor` directive](#use-trackby-option-for-ngfor-directive)
+    - [`*ngFor` directive](#ngfor-directive)
+      - [Use `trackBy` option](#use-trackby-option)
+      - [Minimize DOM elements](#minimize-dom-elements)
     - [Optimize template expressions](#optimize-template-expressions)
 - [Conclusion](#conclusion)
 - [Contributing](#contributing)
@@ -70,9 +79,12 @@ Tools which allows us to bundle our applications efficiently are:
 - [Webpack Code Splitting](https://webpack.js.org/guides/code-splitting/) - Techniques to split your code.
 - [Webpack & http2](https://medium.com/webpack/webpack-http-2-7083ec3f3ce6#.46idrz8kb) - Need for splitting with http2.
 - [Rollup](https://github.com/rollup/rollup) - provides bundling by performing efficient tree-shaking, taking advantage of the static nature of the ES2015 modules.
-- [Google Closure Compiler](https://github.com/google/closure-compiler) - performs plenty of optimizations and provides bundling support. Originally written in Java, since recently it also has a [JavaScript version](https://www.npmjs.com/package/google-closure-compiler-js) which can be [found here](https://www.npmjs.com/package/google-closure-compiler-js).
+- [Google Closure Compiler](https://github.com/google/closure-compiler) - performs plenty of optimizations and provides bundling support. Originally written in Java, since recently it also has a [JavaScript version](https://www.npmjs.com/package/google-closure-compiler) which can be [found here](https://www.npmjs.com/package/google-closure-compiler).
 - [SystemJS Builder](https://github.com/systemjs/builder) - provides a single-file build for SystemJS of mixed-dependency module trees.
 - [Browserify](http://browserify.org/).
+- [ngx-build-modern](https://github.com/manfredsteyer/ngx-build-plus/tree/master/ngx-build-modern) - plugin for Angular-CLI which builds the application bundle in two variants:
+  1. For modern browsers with ES2015 modules and specific polyfills resulting in a smaller bundle.
+  2. Additional legacy version using different polyfills and compiler target (as it is by default).
 
 **Resources**
 
@@ -86,7 +98,7 @@ These practices allow us to minimize the bandwidth consumption by reducing the p
 **Tooling**
 
 - [Uglify](https://github.com/mishoo/UglifyJS) - performs minification such as mangling variables, removal of comments & whitespace, dead code elimination, etc. Written completely in JavaScript, has plugins for all popular task runners.
-- [Google Closure Compiler](https://github.com/google/closure-compiler) - performs similar to uglify type of minification. In advanced mode it transforms the AST of our program aggressively in order to be able to perform even more sophisticated optimizations. It has also a [JavaScript version](https://www.npmjs.com/package/google-closure-compiler-js) which can be [found here](https://www.npmjs.com/package/google-closure-compiler-js). GCC also supports *most of the ES2015 modules syntax* so it can [perform tree-shaking](#tree-shaking).
+- [Google Closure Compiler](https://github.com/google/closure-compiler) - performs similar to uglify type of minification. In advanced mode it transforms the AST of our program aggressively in order to be able to perform even more sophisticated optimizations. It has also a [JavaScript version](https://www.npmjs.com/package/google-closure-compiler) which can be [found here](https://www.npmjs.com/package/google-closure-compiler). GCC also supports *most of the ES2015 modules syntax* so it can [perform tree-shaking](#tree-shaking).
 
 **Resources**
 
@@ -97,7 +109,7 @@ These practices allow us to minimize the bandwidth consumption by reducing the p
 
 Although we don't see the whitespace character (a character matching the `\s` regex) it is still represented by bytes which are transfered over the network. If we reduce the whitespace from our templates to minimum we will be respectively able to drop the bundle size of the AoT code even further.
 
-Thankfully, we don't have to do this manually. The `ComponentMetadata` interface provides the property `preserveWhitespaces` which by default has value `false`, because removing the whitespace always may influence the DOM layout. In case we set the property to `false` Angular will trim the unnecessary whitespace which will lead to further reduction of the bundle size.
+Thankfully, we don't have to do this manually. The `ComponentMetadata` interface provides the property `preserveWhitespaces` which by default has value `false`, because removing the whitespace always may influence the DOM layout. In case we set the property to `true` Angular will trim the unnecessary whitespace which will lead to further reduction of the bundle size.
 
 - [preserveWhitespaces in the Angular docs](https://angular.io/api/core/Component#preserveWhitespaces)
 
@@ -129,7 +141,7 @@ This means that the unused export `bar` will not be included into the final bund
 
 - [Webpack](https://webpack.js.org) - provides efficient bundling by performing [tree-shaking](#tree-shaking). Once the application has been bundled, it does not export the unused code so it can be safely considered as dead code and removed by Uglify.
 - [Rollup](https://github.com/rollup/rollup) - provides bundling by performing an efficient tree-shaking, taking advantage of the static nature of the ES2015 modules.
-- [Google Closure Compiler](https://github.com/google/closure-compiler) - performs plenty of optimizations and provides bundling support. Originally written in Java, since recently it has also a [JavaScript version](https://www.npmjs.com/package/google-closure-compiler-js) which can be [found here](https://www.npmjs.com/package/google-closure-compiler-js).
+- [Google Closure Compiler](https://github.com/google/closure-compiler) - performs plenty of optimizations and provides bundling support. Originally written in Java, since recently it has also a [JavaScript version](https://www.npmjs.com/package/google-closure-compiler) which can be [found here](https://www.npmjs.com/package/google-closure-compiler).
 
 *Note:* GCC does not support `export *` yet, which is essential for building Angular applications because of the heavy usage of the "barrel" pattern.
 
@@ -138,6 +150,81 @@ This means that the unused export `bar` will not be included into the final bund
 - ["Building an Angular Application for Production"](http://blog.mgechev.com/2016/06/26/tree-shaking-angular2-production-build-rollup-javascript/)
 - ["2.5X Smaller Angular Applications with Google Closure Compiler"](http://blog.mgechev.com/2016/07/21/even-smaller-angular2-applications-closure-tree-shaking/)
 - ["Using pipeable operators in RxJS"](https://github.com/ReactiveX/rxjs/blob/master/doc/pipeable-operators.md)
+
+### Tree-Shakeable Providers
+
+Since the release of Angular version 6, The angular team provided a new feature to allow services to be tree-shakeable, meaning that your services will not be included in the final bundle unless they're being used by other services or components. This can help reduce the bundle size by removing unused code from the bundle.
+
+You can make your services tree-shakeable by using the `providedIn` attribute to define where the service should be initialized when using the `@Injectable()` decorator. Then you should remove it from the `providers` attribute of your `NgModule` declaration as well as its import statement as follows.
+
+Before:
+
+```ts
+// app.module.ts
+import { NgModule } from '@angular/core'
+import { AppRoutingModule } from './app-routing.module'
+import { AppComponent } from './app.component'
+import { environment } from '../environments/environment'
+import { MyService } from './app.service'
+
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    ...
+  ],
+  providers: [MyService],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```
+
+```ts
+// my-service.service.ts
+import { Injectable } from '@angular/core'
+
+@Injectable()
+export class MyService { }
+```
+
+After:
+
+```ts
+// app.module.ts
+import { NgModule } from '@angular/core'
+import { AppRoutingModule } from './app-routing.module'
+import { AppComponent } from './app.component'
+import { environment } from '../environments/environment'
+
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    ...
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```
+
+```ts
+// my-service.service.ts
+import { Injectable } from '@angular/core'
+
+@Injectable({
+  providedIn: 'root'
+})
+export class MyService { }
+```
+
+If `MyService` is not injected in any component/service, then it will not be included in the bundle.
+
+**Resources**
+
+- [Angular Providers](https://angular.io/guide/providers)
 
 ### Ahead-of-Time (AoT) Compilation
 
@@ -176,6 +263,7 @@ In such cases a good solution might be to load some of the application's modules
 **Tooling**
 
 - [Webpack](https://github.com/webpack/webpack) - allows asynchronous module loading.
+- [ngx-quicklink](https://github.com/mgechev/ngx-quicklink) - router preloading strategy which automatically downloads the lazy-loaded modules associated with all the visible links on the screen
 
 ### Don't Lazy-Load the Default Route
 
@@ -219,6 +307,9 @@ The application shell is the minimum user interface that we show to the users in
 
 We can think of the Service Worker as an HTTP proxy which is located in the browser. All requests sent from the client are first intercepted by the Service Worker which can either handle them or pass them through the network.
 
+You can add a Service Worker to your Angular project by running
+``` ng add @angular/pwa ```
+
 **Tooling**
 
 - [Angular Service Worker](https://angular.io/guide/service-worker-intro) - aims to automate the process of managing Service Workers. It also contains Service Worker for caching static assets, and one for [generating application shell](https://developers.google.com/web/updates/2015/11/app-shell?hl=en).
@@ -227,6 +318,7 @@ We can think of the Service Worker as an HTTP proxy which is located in the brow
 **Resources**
 
 - ["The offline cookbook"](https://jakearchibald.com/2014/offline-cookbook/)
+- ["Getting started with service workers"](https://angular.io/guide/service-worker-getting-started)
 
 ## Runtime Optimizations
 
@@ -394,9 +486,13 @@ The pure flag indicates that the pipe is not dependent on any global state and d
 
 The default value of the `pure` property is `true`.
 
-### Use `trackBy` option for `*ngFor` directive
+### `*ngFor` directive
 
-The `*ngFor` directive is used for rendering a collection. By default `*ngFor` identifies object uniqueness by reference.
+The `*ngFor` directive is used for rendering a collection.
+
+#### Use `trackBy` option
+
+By default `*ngFor` identifies object uniqueness by reference.
 
 Which means when developer breaks reference to object during updating item's content Angular treats it as removal of the old object and addition of the new object. This effects in destroying old DOM node in the list and adding new DOM node on its place.
 
@@ -428,10 +524,22 @@ export class YtFeedComponent {
   }
 }
 ```
+
+#### Minimize DOM elements
+
+Rendering the DOM elements is usually the most expensive operation when adding elements to the UI. The main work is usually caused by inserting the element into the DOM and applying the styles. If `*ngFor` renders a lot of elements, browsers (especially older ones) may slow down and need more time to finish rendering of all elements. This is not specific to Angular.
+
+To reduce rendering time, try the following:
+- Apply virtual scrolling via [CDK](https://material.angular.io/cdk/scrolling/overview) or [ngx-virtual-scroller](https://github.com/rintoj/ngx-virtual-scroller)
+- Reducing the amount of DOM elements rendered in `*ngFor` section of your template. Usually unneeded/unused DOM elements arise from extending the template again and again. Rethinking its structure probably makes things much easier.
+- Use [`ng-container`](https://angular.io/guide/structural-directives#ngcontainer) where possible
+
 **Resources**
 
 - ["NgFor directive"](https://angular.io/docs/ts/latest/api/common/index/NgFor-directive.html) - official documentation for `*ngFor`
 - ["Angular — Improve performance with trackBy"](https://netbasal.com/angular-2-improve-performance-with-trackby-cc147b5104e5) - shows gif demonstration of the approach
+- [Component Dev Kit (CDK) Virtual Scrolling](https://material.angular.io/cdk/scrolling/overview) - API description
+- [ngx-virtual-scroller](https://github.com/rintoj/ngx-virtual-scroller) - displays a virtual, "infinite" list
 
 ### Optimize template expressions
 
